@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "type": "real_news",
+    "user": "world_news",
+    "caption": "NASA confirms water on the Moon! 🌕🚀",
+    "hashtags": "#NASA #Space #Science",
+    "media": "assets/reel1.jpg"
+  },
+  {
+    "id": 2,
+    "type": "fake_news",
+    "user": "trending_now",
+    "caption": "Aliens landed in Times Square! 👽😂",
+    "hashtags": "#Breaking #Aliens #NYC",
+    "media": "assets/reel2.jpg"
+  },
+  {
+    "id": 3,
+    "type": "positive",
+    "user": "motivation_daily",
+    "caption": "Believe in yourself. The world is yours. 💪✨",
+    "hashtags": "#Motivation #Positivity #Mindset",
+    "media": "assets/reel3.jpg"
+  },
+  {
+    "id": 4,
+    "type": "negative",
+    "user": "toxic_news",
+    "caption": "The economy is collapsing soon! 😨📉",
+    "hashtags": "#Finance #Crisis #Scary",
+    "media": "assets/reel4.jpg"
+  },
+  {
+    "id": 5,
+    "type": "cancel_culture",
+    "user": "social_trends",
+    "caption": "Famous influencer faces massive backlash! 🚨🔥",
+    "hashtags": "#CancelCulture #Drama #Trending",
+    "media": "assets/reel5.jpg"
+  }
+]
