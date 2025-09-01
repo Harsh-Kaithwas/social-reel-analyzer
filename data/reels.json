@@ -1,42 +1,47 @@
 [
   {
-    "id": 1,
-    "type": "real_news",
-    "user": "world_news",
-    "caption": "NASA confirms water on the Moon! 🌕🚀",
-    "hashtags": "#NASA #Space #Science",
+    "id": "reel1",
+    "user": "news_daily",
+    "caption": "Breaking: NASA discovers water on Mars 🌌",
+    "hashtags": "#Space #Science #NASA",
+    "type": "real",
+    "sentiment": "positive",
     "media": "assets/reel1.jpg"
   },
   {
-    "id": 2,
-    "type": "fake_news",
-    "user": "trending_now",
-    "caption": "Aliens landed in Times Square! 👽😂",
-    "hashtags": "#Breaking #Aliens #NYC",
+    "id": "reel2",
+    "user": "random_news",
+    "caption": "Aliens landed in Delhi last night 🛸",
+    "hashtags": "#Aliens #UFO #FakeNews",
+    "type": "fake",
+    "sentiment": "negative",
     "media": "assets/reel2.jpg"
   },
   {
-    "id": 3,
-    "type": "positive",
-    "user": "motivation_daily",
-    "caption": "Believe in yourself. The world is yours. 💪✨",
-    "hashtags": "#Motivation #Positivity #Mindset",
+    "id": "reel3",
+    "user": "motivation_hub",
+    "caption": "Wake up, grind, and shine 💪🔥",
+    "hashtags": "#Motivation #Success #PositiveVibes",
+    "type": "real",
+    "sentiment": "positive",
     "media": "assets/reel3.jpg"
   },
   {
-    "id": 4,
-    "type": "negative",
-    "user": "toxic_news",
-    "caption": "The economy is collapsing soon! 😨📉",
-    "hashtags": "#Finance #Crisis #Scary",
+    "id": "reel4",
+    "user": "cancel_trends",
+    "caption": "This influencer is canceled again 🚫",
+    "hashtags": "#CancelCulture #Drama",
+    "type": "real",
+    "sentiment": "negative",
     "media": "assets/reel4.jpg"
   },
   {
-    "id": 5,
-    "type": "cancel_culture",
-    "user": "social_trends",
-    "caption": "Famous influencer faces massive backlash! 🚨🔥",
-    "hashtags": "#CancelCulture #Drama #Trending",
+    "id": "reel5",
+    "user": "health_tips",
+    "caption": "Drink lemon water every morning 🍋",
+    "hashtags": "#Health #Fitness #Tips",
+    "type": "real",
+    "sentiment": "positive",
     "media": "assets/reel5.jpg"
   }
 ]
