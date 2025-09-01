@@ -1,15 +1,18 @@
 # app.py
 import streamlit as st
+import os
 import json
 import random
-import os
+import hashlib
 from typing import List, Dict
 
 # ---------------- Page config ----------------
-st.set_page_config(page_title="Instagram-style Reels Prototype", layout="centered")
-ROOT = os.path.dirname(__file__) if "__file__" in globals() else "."
+st.set_page_config(page_title="Instagram Reels Prototype", layout="centered", initial_sidebar_state="collapsed")
 
-# ---------------- Helpers to load files with fallbacks ----------------
+# ---------------- Paths ----------------
+ROOT = os.path.dirname(__file__) if "__file__" in globals() else os.getcwd()
+
+# ---------------- Helpers ----------------
 def safe_read(path: str) -> str:
     try:
         with open(os.path.join(ROOT, path), "r", encoding="utf-8") as f:
@@ -24,164 +27,105 @@ def load_json(path: str):
     except Exception:
         return None
 
-# ---------------- Default dummy data (used if data files missing) ----------------
-DEFAULT_REELS = [
-    {
-        "id": "1",
-        "type": "real_news",
-        "user": "world_news",
-        "caption": "NASA confirms water on the Moon! 🌕🚀",
-        "hashtags": "#NASA #Space #Science",
-        "media": "assets/reel1.jpg",
-        "likes": "18.4K",
-    },
-    {
-        "id": "2",
-        "type": "fake_news",
-        "user": "trending_now",
-        "caption": "Aliens landed in Times Square! 👽😂",
-        "hashtags": "#Breaking #Aliens #NYC",
-        "media": "assets/reel2.jpg",
-        "likes": "9.8K",
-    },
-    {
-        "id": "3",
-        "type": "positive",
-        "user": "motivation_daily",
-        "caption": "Believe in yourself. The world is yours. 💪✨",
-        "hashtags": "#Motivation #Positivity",
-        "media": "assets/reel3.jpg",
-        "likes": "5.0K",
-    },
-    {
-        "id": "4",
-        "type": "negative",
-        "user": "toxic_news",
-        "caption": "The economy is collapsing soon! 😨📉",
-        "hashtags": "#Finance #Crisis",
-        "media": "assets/reel4.jpg",
-        "likes": "2.3K",
-    },
-    {
-        "id": "5",
-        "type": "cancel_culture",
-        "user": "social_trends",
-        "caption": "Famous influencer faces massive backlash! 🚨🔥",
-        "hashtags": "#CancelCulture #Drama",
-        "media": "assets/reel5.jpg",
-        "likes": "12.1K",
-    },
-]
+def hash_to_seed(s: str) -> int:
+    """Return small deterministic integer from string for picsum seed."""
+    h = hashlib.sha256(s.encode("utf-8")).hexdigest()
+    # use last 6 hex digits to create an int (keeps value moderate)
+    return int(h[-6:], 16) % 1000 + 1
 
-DEFAULT_COMMENTS = {
-    "1": ["This is amazing! 🚀", "Science rocks!", "Can't wait for Moon missions!"],
-    "2": ["Lol fake news 🤣", "Where's the proof?", "Clickbait as usual."],
-    "3": ["Needed this today 💜", "Positive vibes only ✨", "Love it!"],
-    "4": ["This is scary 😨", "Hope things get better soon.", "Toxic news everywhere."],
-    "5": ["Drama again 😂", "People need to chill.", "Cancel culture is crazy!"]
-}
-
-# ---------------- Load data if provided ----------------
-reels_json = load_json("data/reels.json")
-comments_json = load_json("data/comments.json")
-
-reels = reels_json if isinstance(reels_json, list) else DEFAULT_REELS
-comments_store = comments_json if isinstance(comments_json, dict) else DEFAULT_COMMENTS
-
-# ---------------- Load CSS and JS (fallbacks) ----------------
-css_file = safe_read("static/style.css")
-js_file = safe_read("static/script.js")
-
-# basic fallback CSS (keeps it clean)
-FALLBACK_CSS = """
-<style>
-:root{--bg:#070708;--card:#0e1113;--muted:#cbd5e1;}
-html,body,[data-testid="stAppViewContainer"]{background:var(--bg);color:#eef2ff}
-.feed{width:min(520px,96vw);margin:6px auto 60px auto}
-.reel{position:relative;width:100%;height:78vh;border-radius:14px;overflow:hidden;background:#000;margin:20px 0;box-shadow:0 10px 30px rgba(0,0,0,.6);}
-.reel img{width:100%;height:100%;object-fit:cover;display:block}
-.actions{position:absolute;right:12px;bottom:18px;display:flex;flex-direction:column;gap:12px;z-index:5;align-items:center}
-.icon{width:52px;height:52px;border-radius:999px;background:rgba(0,0,0,0.45);display:grid;place-items:center;font-size:20px;color:white;border:1px solid rgba(255,255,255,0.04)}
-.meta{position:absolute;left:12px;bottom:18px;right:88px;z-index:4;color:#f8fafc;text-shadow:0 2px 12px rgba(0,0,0,.6)}
-.user{font-weight:700;font-size:15px}
-.cap{font-size:14px;margin-top:6px}
-.tags{font-size:13px;color:var(--muted);margin-top:6px}
-.likes{font-size:12px;color:var(--muted);margin-top:6px}
-
-/* overlay modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;backdrop-filter:blur(3px)}
-.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:92;background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);width:min(520px,92vw)}
-.chips{display:flex;gap:8px;margin-bottom:10px}
-.chip{padding:8px 10px;border-radius:10px;background:#0b1112;border:1px solid rgba(255,255,255,0.03)}
-.warn{background:#2a1216;border-color:#7f1d1d;color:#ffd7d7}
-
-/* drawer */
-.drawer{position:fixed;left:0;right:0;bottom:0;background:#0f1113;border-top-left-radius:12px;border-top-right-radius:12px;padding:12px 14px;z-index:95;max-height:70vh;overflow:auto;border:1px solid rgba(255,255,255,0.03)}
-.comment{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03);color:#e6eef8}
-.muted{color:var(--muted);opacity:.85;font-size:13px;margin-bottom:8px}
-.input{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:#0b0d10;color:#fff;margin-top:8px}
-.btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#fff}
-.footer{opacity:.6;text-align:center;margin-top:18px}
-</style>
-"""
-
-FALLBACK_JS = """
-<script>
-function noop(){/*no-op fallback*/}
-// we don't rely heavily on JS for actions; Streamlit buttons handle interactivity.
-// This placeholder allows projects that include static/script.js to work when present.
-</script>
-"""
-
-# inject CSS/JS (prefer user files)
-if css_file.strip():
-    st.markdown(f"<style>{css_file}</style>", unsafe_allow_html=True)
-else:
-    st.markdown(FALLBACK_CSS, unsafe_allow_html=True)
-
-if js_file.strip():
-    st.markdown(f"<script>{js_file}</script>", unsafe_allow_html=True)
-else:
-    st.markdown(FALLBACK_JS, unsafe_allow_html=True)
-
-# ---------------- Icons (use local svg if exist else emoji) ----------------
-def icon_svg_path(name: str):
-    p = os.path.join(ROOT, "icons", f"{name}.svg")
-    return p if os.path.exists(p) else None
-
-def icon_img_tag(name: str, size: int = 32, alt: str = "") -> str:
-    svg_path = icon_svg_path(name)
-    if svg_path:
-        # use relative path that Streamlit can serve
+def icon_img_tag(name: str, size: int = 28, alt: str = "") -> str:
+    svg_path = os.path.join(ROOT, "icons", f"{name}.svg")
+    if os.path.exists(svg_path):
+        # Streamlit serves files from repo root path correctly when used as relative src
         return f'<img src="icons/{name}.svg" width="{size}" height="{size}" alt="{alt}" />'
-    # fall back to emoji
     emoji_map = {
         "like": "❤️",
         "comment": "💬",
         "share": "📤",
         "more": "⋮",
-        "analyze": "🧠",
+        "analyze": "🧠"
     }
     return emoji_map.get(name, "❖")
 
-# ---------------- Session state ----------------
-if "open_drawer_for" not in st.session_state:
-    st.session_state.open_drawer_for = None
-if "open_modal_for" not in st.session_state:
-    st.session_state.open_modal_for = None
-if "comment_inputs" not in st.session_state:
-    st.session_state.comment_inputs = {r["id"]: "" for r in reels}
+# ---------------- Default dummy data ----------------
+DEFAULT_REELS = [
+    {"id": "reel1", "user": "world_news", "caption": "NASA confirms water on the Moon! 🌕🚀", "hashtags": "#NASA #Space #Science", "type": "real", "sentiment": "positive", "media": "assets/reel1.jpg", "likes": "18.4K"},
+    {"id": "reel2", "user": "trending_now", "caption": "Aliens landed in Times Square! 👽😂", "hashtags": "#Breaking #Aliens #NYC", "type": "fake", "sentiment": "negative", "media": "assets/reel2.jpg", "likes": "9.8K"},
+    {"id": "reel3", "user": "motivation_daily", "caption": "Believe in yourself. The world is yours. 💪✨", "hashtags": "#Motivation #Positivity", "type": "real", "sentiment": "positive", "media": "assets/reel3.jpg", "likes": "5.0K"},
+    {"id": "reel4", "user": "cancel_trends", "caption": "Famous influencer faces massive backlash! 🚨🔥", "hashtags": "#CancelCulture #Drama", "type": "real", "sentiment": "negative", "media": "assets/reel4.jpg", "likes": "12.1K"},
+    {"id": "reel5", "user": "health_tips", "caption": "Drink lemon water every morning 🍋", "hashtags": "#Health #Fitness #Tips", "type": "real", "sentiment": "positive", "media": "assets/reel5.jpg", "likes": "2.3K"},
+]
 
-# ---------------- Dummy AI / scoring ----------------
-def analyze_ai(caption: str, tags: str, comments: List[str]):
-    tox_words = ["hate", "kill", "fake", "scam", "vulgar", "abuse", "destroy"]
-    fake = random.randint(5, 85)
-    tox = random.randint(5, 90)
-    impact = random.randint(15, 95)
+DEFAULT_COMMENTS = {
+    "reel1": ["This is amazing! 🚀", "Science rocks!", "Can't wait for Moon missions!"],
+    "reel2": ["Lol fake news 🤣", "Where's the proof?", "Clickbait as usual."],
+    "reel3": ["Needed this today 💜", "Positive vibes only ✨", "Love it!"],
+    "reel4": ["Cancel culture again 😑", "People need to chill ✋", "This is exhausting."],
+    "reel5": ["Healthy tips 👍", "Thanks for sharing ❤️", "Great reminder."]
+}
+
+# ---------------- Load external data if present ----------------
+reels_from_file = load_json("data/reels.json")
+comments_from_file = load_json("data/comments.json")
+
+REELS: List[Dict] = reels_from_file if isinstance(reels_from_file, list) and len(reels_from_file) >= 1 else DEFAULT_REELS
+COMMENTS_STORE: Dict[str, List[str]] = comments_from_file if isinstance(comments_from_file, dict) else DEFAULT_COMMENTS
+
+# ---------------- Load custom CSS if available, else fallback ----------------
+external_css = safe_read("static/style.css")
+if external_css.strip():
+    st.markdown(f"<style>{external_css}</style>", unsafe_allow_html=True)
+else:
+    # Fallback CSS (keeps visual polished)
+    st.markdown("""
+    <style>
+      :root{--bg:#050507; --card:#0d0f12; --muted:#9aa6b2}
+      html,body,[data-testid="stAppViewContainer"]{background:var(--bg); color:#eef2ff}
+      .feed{max-width:520px; margin:8px auto 48px auto; padding:6px}
+      .reel{position:relative; width:100%; height:78vh; border-radius:14px; overflow:hidden; background:#000; margin:18px 0; box-shadow:0 12px 30px rgba(0,0,0,0.6)}
+      .reel img{width:100%; height:100%; object-fit:cover; display:block}
+      .actions{position:absolute; right:12px; bottom:20px; display:flex; flex-direction:column; gap:12px; align-items:center; z-index:5}
+      .icon{width:48px; height:48px; border-radius:999px; background:rgba(0,0,0,0.45); display:grid; place-items:center; font-size:20px; color:#fff; border:1px solid rgba(255,255,255,0.04)}
+      .meta{position:absolute; left:12px; bottom:20px; right:96px; z-index:4; text-shadow:0 2px 12px rgba(0,0,0,0.6)}
+      .user{font-weight:700; font-size:15px}
+      .cap{font-size:14px; margin-top:6px}
+      .tags{font-size:13px; color:var(--muted); margin-top:6px}
+      .likes{font-size:12px; color:var(--muted); margin-top:6px}
+      .overlay{position:fixed; inset:0; background:rgba(0,0,0,0.56); z-index:90; backdrop-filter: blur(3px)}
+      .modal{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:92; background:var(--card); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.03); width:min(520px,92vw)}
+      .chip{display:inline-block; padding:8px 10px; border-radius:10px; background:#0b1112; margin-right:8px; border:1px solid rgba(255,255,255,0.02)}
+      .warn{background:#2a1216; border-color:#7f1d1d; color:#ffd7d7}
+      .drawer{position:fixed; left:0; right:0; bottom:0; background:#0b0d10; z-index:95; border-top-left-radius:12px; border-top-right-radius:12px; padding:12px 14px; max-height:70vh; overflow:auto; border:1px solid rgba(255,255,255,0.03)}
+      .comment-row{padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); color:#e6eef8}
+      .muted{color:#9aa6b2; opacity:.9; margin-bottom:8px}
+      .input{width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:#071018; color:#fff; margin-top:8px}
+      .btn{padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background:rgba(255,255,255,0.02); color:#fff}
+      .footer{opacity:.6; text-align:center; margin-top:14px}
+      @media (max-width:520px){ .reel{height:72vh} .actions{right:8px; bottom:14px} }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ---------------- Session state ----------------
+if "open_drawer" not in st.session_state:
+    st.session_state.open_drawer = None  # reel id
+if "open_modal" not in st.session_state:
+    st.session_state.open_modal = None   # reel id
+if "comment_inputs" not in st.session_state:
+    st.session_state.comment_inputs = {r["id"]: "" for r in REELS}
+if "likes" not in st.session_state:
+    st.session_state.likes = {r["id"]: r.get("likes", "") for r in REELS}
+
+# ---------------- Simple Dummy Analyzers ----------------
+def analyze_reel_dummy(caption: str, tags: str, comments: List[str]) -> Dict[str, int]:
+    tox_triggers = ["hate", "kill", "vulgar", "scam", "fake", "destroy"]
+    fake_triggers = ["miracle", "cure", "aliens", "conspiracy"]
     blob = (caption + " " + tags + " " + " ".join(comments)).lower()
-    if any(w in blob for w in tox_words):
+    tox = random.randint(5, 85)
+    fake = random.randint(5, 80)
+    impact = random.randint(10, 92)
+    if any(w in blob for w in tox_triggers):
         tox = min(100, tox + 12)
-    if "miracle" in blob or "cure" in blob:
+    if any(w in blob for w in fake_triggers):
         fake = min(100, fake + 18)
     insight = "✅ Looks safe and positive."
     if tox > 70:
@@ -192,115 +136,114 @@ def analyze_ai(caption: str, tags: str, comments: List[str]):
 
 def predict_comment_effect(text: str) -> int:
     base = random.randint(8, 85)
-    if any(w in text.lower() for w in ["stupid","idiot","hate","kill","abuse","fake"]):
-        base = min(100, base + 20)
+    if any(w in text.lower() for w in ["stupid", "idiot", "hate", "kill", "abuse", "fake"]):
+        base = min(100, base + 18)
     return base
 
-# ---------------- Page header ----------------
-st.markdown("<div style='text-align:center; margin-bottom:6px; opacity:.9'>"
-            "<strong>Instagram-like Reels Prototype</strong> — (Only Comment & Analyze interactive)</div>", unsafe_allow_html=True)
+# ---------------- Header ----------------
+st.markdown("<div style='text-align:center; margin-bottom:6px; font-weight:600;'>Instagram-style Reels Prototype — (Only Comment & Analyze interactive)</div>", unsafe_allow_html=True)
 
 # ---------------- Feed rendering ----------------
 st.markdown('<div class="feed">', unsafe_allow_html=True)
 
-for r in reels:
-    # prepare media source (prefer provided media path; fallback to picsum)
-    media_src = r.get("media", "")
-    if media_src and os.path.exists(os.path.join(ROOT, media_src)):
-        src = media_src.replace("\\", "/")
+for r in REELS:
+    # determine media src - prefer provided local asset if exists, else use picsum seed
+    media_path = r.get("media", "")
+    media_src = ""
+    if media_path and os.path.exists(os.path.join(ROOT, media_path)):
+        # local asset exists
+        media_src = media_path.replace("\\", "/")
     else:
-        # fallback to picsum random with stable seed per id
-        seed = int(''.join([c for c in r["id"] if c.isdigit()]) or 0) + 10
-        src = f"https://picsum.photos/520/780?random={seed}"
+        # fallback to picsum with deterministic seed
+        seed = hash_to_seed(r.get("id", str(random.random())))
+        media_src = f"https://picsum.photos/520/780?random={seed}"
 
-    # create HTML block for reel (no HTML comments inside)
+    # show reel block (HTML for overlay look)
     html = f"""
     <div class="reel">
-        <img src="{src}" alt="reel media" />
-        <div class="actions">
-            <div class="icon" title="likes">{icon_img_tag('like')}</div>
-            <div class="icon" title="comment">{icon_img_tag('comment')}</div>
-            <div class="icon" title="share">{icon_img_tag('share')}</div>
-            <div class="icon" title="more">{icon_img_tag('more')}</div>
-            <div class="icon" title="analyze">{icon_img_tag('analyze')}</div>
-        </div>
-
-        <div class="meta">
-            <div class="user">@{r.get('user','user')}</div>
-            <div class="cap">{r.get('caption','')}</div>
-            <div class="tags">{r.get('hashtags', r.get('tags',''))}</div>
-            <div class="likes">{r.get('likes','')}</div>
-        </div>
+      <img src="{media_src}" alt="reel media" />
+      <div class="actions">
+        <div class="icon" title="likes">{icon_img_tag('like')}</div>
+        <div class="icon" title="comment">{icon_img_tag('comment')}</div>
+        <div class="icon" title="share">{icon_img_tag('share')}</div>
+        <div class="icon" title="more">{icon_img_tag('more')}</div>
+        <div class="icon" title="analyze">{icon_img_tag('analyze')}</div>
+      </div>
+      <div class="meta">
+        <div class="user">@{r.get('user','user')}</div>
+        <div class="cap">{r.get('caption','')}</div>
+        <div class="tags">{r.get('hashtags', r.get('tags',''))}</div>
+        <div class="likes">{st.session_state.likes.get(r['id'], r.get('likes',''))}</div>
+      </div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
 
-    # actual Streamlit buttons for interaction (placed under each reel)
-    cols = st.columns([1,1,1,1,1])
-    cols[0].button("❤", key=f"like_{r['id']}", disabled=True)
-    if cols[1].button("💬  Open comments", key=f"open_comment_{r['id']}"):
-        st.session_state.open_drawer_for = r["id"]
-    cols[2].button("📤  Share", key=f"share_{r['id']}", disabled=True)
-    cols[3].button("⋮  More", key=f"more_{r['id']}", disabled=True)
-    if cols[4].button("🧠  Analyze", key=f"analyze_{r['id']}"):
-        st.session_state.open_modal_for = r["id"]
+    # Real Streamlit buttons for interaction
+    btn_cols = st.columns([1,1,1,1,1])
+    # Like button disabled (visual only)
+    btn_cols[0].button("❤", key=f"like_{r['id']}", disabled=True)
+    if btn_cols[1].button("💬  Open comments", key=f"open_comment_{r['id']}"):
+        st.session_state.open_drawer = r["id"]
+    btn_cols[2].button("📤  Share", key=f"share_{r['id']}", disabled=True)
+    btn_cols[3].button("⋮  More", key=f"more_{r['id']}", disabled=True)
+    if btn_cols[4].button("🧠  Analyze", key=f"analyze_{r['id']}"):
+        st.session_state.open_modal = r["id"]
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Drawer (comments) ----------------
-if st.session_state.open_drawer_for is not None:
-    rid = st.session_state.open_drawer_for
-    reel = next((x for x in reels if x["id"] == rid), None)
-    st.markdown('<div class="overlay"></div>', unsafe_allow_html=True)
-    # Drawer (use Streamlit elements inside for reliability)
-    st.markdown('<div class="drawer">', unsafe_allow_html=True)
-    st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center'>"
-                f"<div style='font-weight:700'>Comments • @{reel.get('user')}</div>"
-                f"<div><button class='btn' id='close_draw'>Close</button></div></div>", unsafe_allow_html=True)
-    st.markdown(f'<div class="muted">Swipe/scroll to view comments</div>', unsafe_allow_html=True)
+# ---------------- Comment Drawer ----------------
+if st.session_state.open_drawer:
+    rid = st.session_state.open_drawer
+    reel = next((x for x in REELS if x["id"] == rid), None)
+    if reel:
+        st.markdown('<div class="overlay"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="drawer">', unsafe_allow_html=True)
+        st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center'><div style='font-weight:700'>Comments • @{reel.get('user')}</div></div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="muted">Scroll to view comments</div>', unsafe_allow_html=True)
 
-    # render comments from comments_store if present
-    for c in comments_store.get(rid, []):
-        st.markdown(f'<div class="comment">💬 {c}</div>', unsafe_allow_html=True)
+        # Show comments from COMMENTS_STORE
+        for c in COMMENTS_STORE.get(rid, []):
+            st.markdown(f'<div class="comment-row">💬 {c}</div>', unsafe_allow_html=True)
 
-    # comment input
-    txt_key = f"comment_input_{rid}"
-    txt = st.text_input("Type your comment here…", key=txt_key, label_visibility="collapsed")
-    if txt:
-        st.session_state.comment_inputs[rid] = txt
-        score = predict_comment_effect(txt)
-        if score > 70:
-            st.markdown(f'<div class="chip warn">🔮 Comment Effect Score: {score}% — might have negative impact</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="chip">🔮 Comment Effect Score: {score}% — looks okay</div>', unsafe_allow_html=True)
+        # input
+        input_key = f"comment_input_{rid}"
+        txt = st.text_input("Type your comment here…", key=input_key, label_visibility="collapsed", placeholder="Type your comment here…")
+        if txt:
+            st.session_state.comment_inputs[rid] = txt
+            score = predict_comment_effect(txt)
+            if score > 70:
+                st.markdown(f'<div class="chip warn">🔮 Comment Effect Score: {score}% — might have negative impact</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="chip">🔮 Comment Effect Score: {score}% — looks okay</div>', unsafe_allow_html=True)
 
-    if st.button("Close comments", key=f"close_comments_{rid}"):
-        st.session_state.open_drawer_for = None
+        if st.button("Close comments", key=f"close_comments_{rid}"):
+            st.session_state.open_drawer = None
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------------- Modal (analysis) ----------------
-if st.session_state.open_modal_for is not None:
-    rid = st.session_state.open_modal_for
-    reel = next((x for x in reels if x["id"] == rid), None)
-    res = analyze_ai(reel.get("caption",""), reel.get("hashtags", reel.get("tags","")), comments_store.get(rid, []))
-    st.markdown('<div class="overlay"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="modal">', unsafe_allow_html=True)
-    st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center;'><div style='font-weight:700'>Reel Analysis • @{reel.get('user')}</div></div>", unsafe_allow_html=True)
-    st.markdown('<div class="chips">', unsafe_allow_html=True)
-    st.markdown(f'<div class="chip">🕵️ Fake: <b>{res["fake"]}%</b></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="chip">☣️ Toxicity: <b>{res["tox"]}%</b></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="chip">📈 Impact: <b>{res["impact"]}%</b></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="margin-bottom:10px">{res["insight"]}</div>', unsafe_allow_html=True)
-    if res["tox"] >= 70:
-        st.markdown('<div class="chip warn">⚠️ This content may negatively affect thinking / mental health.</div>', unsafe_allow_html=True)
+# ---------------- Analyze Modal ----------------
+if st.session_state.open_modal:
+    rid = st.session_state.open_modal
+    reel = next((x for x in REELS if x["id"] == rid), None)
+    if reel:
+        res = analyze_reel_dummy(reel.get("caption",""), reel.get("hashtags", reel.get("tags","")), COMMENTS_STORE.get(rid, []))
+        st.markdown('<div class="overlay"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="modal">', unsafe_allow_html=True)
+        st.markdown(f"<div style='display:flex;justify-content:space-between;align-items:center'><div style='font-weight:700'>Reel Analysis • @{reel.get('user')}</div></div>", unsafe_allow_html=True)
+        st.markdown('<div style="margin-top:10px;margin-bottom:8px">', unsafe_allow_html=True)
+        st.markdown(f'<span class="chip">🕵️ Fake: <b>{res["fake"]}%</b></span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="chip">☣️ Toxicity: <b>{res["tox"]}%</b></span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="chip">📈 Impact: <b>{res["impact"]}%</b></span>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="margin-bottom:8px">{res["insight"]}</div>', unsafe_allow_html=True)
+        if res["tox"] >= 70:
+            st.markdown('<div class="chip warn">⚠️ This content may negatively affect thinking / mental health.</div>', unsafe_allow_html=True)
 
-    if st.button("Close analysis", key=f"close_modal_{rid}"):
-        st.session_state.open_modal_for = None
+        if st.button("Close analysis", key=f"close_analysis_{rid}"):
+            st.session_state.open_modal = None
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Footer ----------------
-st.markdown('<div class="footer">Prototype — modular structure (assets/, data/, static/, icons/). '
-            'If icons or assets not present, emojis + picsum are used as fallback.</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer">Prototype — modular-ready. Put your images in assets/ and optional data/reels.json & data/comments.json to override defaults.</div>', unsafe_allow_html=True)
