@@ -1,0 +1,89 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    font-family: 'Helvetica', sans-serif;
+}
+
+.reel-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.reel-media {
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+}
+
+.actions {
+    position: absolute;
+    right: 15px;
+    bottom: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    z-index: 10;
+}
+
+.action-btn {
+    font-size: 26px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+.action-btn:hover {
+    transform: scale(1.2);
+}
+
+.caption-box {
+    position: absolute;
+    bottom: 20px;
+    left: 15px;
+    color: white;
+    width: 70%;
+    font-size: 15px;
+}
+
+.drawer {
+    position: fixed;
+    bottom: -60%;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    background-color: white;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.4);
+    transition: bottom 0.3s ease-in-out;
+    padding: 15px;
+    z-index: 100;
+    border-radius: 15px 15px 0 0;
+}
+
+.drawer.open {
+    bottom: 0;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 80%;
+    max-width: 400px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease-in-out;
+    z-index: 200;
+}
+
+.popup.open {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.popup h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
